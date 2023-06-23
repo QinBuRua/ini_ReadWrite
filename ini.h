@@ -30,7 +30,9 @@ class _iniValue{
 private:
 	string realValue;
 public:
-	_iniValue(){}
+	_iniValue(){
+		realValue="";
+	}
 	_iniValue(bool tmp){
 		if(tmp==true){
 			realValue="true";
@@ -154,15 +156,6 @@ public:
 	_iniFile(const string &tmpFile){
 		load(tmpFile);
 	}
-	_iniValue get(const string &tmpSection,const string &tmpKey){
-		return iniData[tmpSection][tmpKey];
-	}
-	_iniSection & operator[] (const string & tmp){
-		return iniData[tmp];
-	}
-	void set(const string &tmpSection,const string &tmpKey,_iniValue & tmpValue){
-		iniData[tmpSection][tmpKey]=tmpValue;
-	}
 	bool has(const string &tmpSection,const string &tmpKey){
 		map<string,_iniSection>::const_iterator it = iniData.find(tmpSection);
 		if(it!=iniData.end()){
@@ -173,17 +166,51 @@ public:
 	bool has(const string &tmpSection){
 		return (iniData.find(tmpSection) != iniData.end());
 	}
+	_iniValue get(const string &tmpSection,const string &tmpKey){
+		if(!has(tmpSection,tmpKey)){
+			return _iniValue();
+		}
+		return iniData[tmpSection][tmpKey];
+	}
+	_iniSection & operator[] (const string & tmp){
+		return iniData[tmp];
+	}
+	void set(const string &tmpSection,const string &tmpKey,_iniValue & tmpValue){
+		iniData[tmpSection][tmpKey]=tmpValue;
+	}
 	void remove(const string &tmpSection,const string &tmpKey){
-		//write here!
+		map<string,_iniSection>::iterator it=iniData.find(tmpSection);
+		if(it != iniData.end()){
+			it->second.erase(tmpKey);
+		}
+	}
+	void remove(const string &tmpSection){
+		iniData.erase(tmpSection);
+	}
+	void clear(){
+		fileName="";
+		iniData.clear();
+	}
+	string string_(){
+		stringstream sstr;
+		for(auto itIniData=iniData.begin(); itIniData!=iniData.end(); itIniData++){
+			sstr<<'['<<itIniData->first<<']'<<endl;
+			for(auto itIniSection=itIniData->second.begin(); itIniSection!=itIniData->second.end(); itIniSection++){
+				sstr<<itIniSection->first<<" = "<<string(itIniSection->second)<<endl;
+			}
+			sstr<<endl;
+		}
+		return sstr.str();
+	}
+	void show(){
+		cout<<string_();
+	}
+	bool save(const string &tmpFileName){
+		ofstream fout(tmpFileName);
+		if(fout.fail()){
+			return false;
+		}
+		fout<<string_();
+		return true;
 	}
 };
-
-int main(){
-	
-	_iniFile file;
-	if(file.load("config.ini")==false){
-		cout<<"no!";
-	}
-	cout<<(string)file["log"]["last_log"];
-	return 0;
-}
