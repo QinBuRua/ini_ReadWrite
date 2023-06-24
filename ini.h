@@ -4,15 +4,6 @@
 #include<map>
 using namespace std;
 
-string trim(string str){
-	if(str.empty()){
-		return str;
-	}
-	str.erase(0,str.find_first_not_of(" /t/n/r"));
-	str.erase(str.find_last_not_of(" /t/n/r")+1);
-	return str;
-}
-
 bool is_number(string str){
 	stringstream sstr(str);
 	double num;
@@ -24,6 +15,14 @@ bool is_number(string str){
 		return false;
 	}
 	return true;
+}
+string trim(string str){
+	if(str.empty()){
+		return str;
+	}
+	str.erase(0,str.find_first_not_of(" /r/n"));
+	str.erase(str.find_last_not_of(" /r/n")+1);
+	return str;
 }
 
 class _iniValue{
@@ -75,6 +74,10 @@ public:
 		realValue=tmp;
 	}
 	
+	void set(const string & tmp){
+		realValue=tmp;
+	}
+	
 	operator bool(){
 		if(is_number(realValue)){
 			if(realValue=="0"){
@@ -106,14 +109,31 @@ typedef map<string,_iniValue> _iniSection;
 class _iniFile{
 private:
 	string fileName;
-	map <string,_iniSection> iniData;
+	map<string,_iniSection> iniData;
 public:
 	_iniFile(){
 	}
 	string get_fileName(){
 		return fileName;
 	}
+	void clear(){
+		fileName="";
+		iniData.clear();
+	}
+	void set(const string &tmpSection,const string &tmpKey,int tmpValue){
+		iniData[tmpSection][tmpKey]=tmpValue;
+	}
+	void set(const string &tmpSection,const string &tmpKey,double tmpValue){
+		iniData[tmpSection][tmpKey]=tmpValue;
+	}
+	void set(const string &tmpSection,const string &tmpKey,const string &tmpValue){
+		iniData[tmpSection][tmpKey]=tmpValue;
+	}
+	void set(const string &tmpSection,const string &tmpKey,bool tmpValue){
+		iniData[tmpSection][tmpKey]=tmpValue;
+	}
 	bool load(const string & tmpFile){
+		clear();
 		fileName=tmpFile;
 		ifstream tmpFin(tmpFile);
 		if(tmpFin.fail()){
@@ -148,7 +168,7 @@ public:
 						}
 					}
 				}
-				iniData[tmpSection][tmpKey]=tmpValue;
+				set(tmpSection,tmpKey,tmpValue);
 			}
 		}
 		return true;
@@ -175,9 +195,6 @@ public:
 	_iniSection & operator[] (const string & tmp){
 		return iniData[tmp];
 	}
-	void set(const string &tmpSection,const string &tmpKey,_iniValue & tmpValue){
-		iniData[tmpSection][tmpKey]=tmpValue;
-	}
 	void remove(const string &tmpSection,const string &tmpKey){
 		map<string,_iniSection>::iterator it=iniData.find(tmpSection);
 		if(it != iniData.end()){
@@ -187,15 +204,16 @@ public:
 	void remove(const string &tmpSection){
 		iniData.erase(tmpSection);
 	}
-	void clear(){
-		fileName="";
-		iniData.clear();
-	}
 	string string_(){
 		stringstream sstr;
 		for(auto itIniData=iniData.begin(); itIniData!=iniData.end(); itIniData++){
 			sstr<<'['<<itIniData->first<<']'<<endl;
 			for(auto itIniSection=itIniData->second.begin(); itIniSection!=itIniData->second.end(); itIniSection++){
+				if(!is_number(itIniSection->second)){
+					if(string(itIniSection->second)!="true"&&string(itIniSection->second)!="false"){
+						sstr<<itIniSection->first<<" = \""<<string(itIniSection->second)<<endl<<'\"';
+					}
+				}
 				sstr<<itIniSection->first<<" = "<<string(itIniSection->second)<<endl;
 			}
 			sstr<<endl;
@@ -212,5 +230,16 @@ public:
 		}
 		fout<<string_();
 		return true;
+	}
+	void assign(const _iniFile &tmp){
+		clear();
+		for(auto tmpIt=tmp.iniData.begin(); tmpIt!=tmp.iniData.end(); tmpIt++){
+			for(auto tmpIter=tmpIt->second.begin(); tmpIter!=tmpIt->second.end(); tmpIter++){
+				iniData[tmpIt->first][tmpIter->first]=tmpIter->second;
+			}
+		}
+	}
+	void operator= (const _iniFile &tmp){
+		assign(tmp);
 	}
 };
